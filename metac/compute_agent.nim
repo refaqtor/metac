@@ -126,10 +126,10 @@ mount -t devpts pts /dev/pts
 
   # Filesystems
   echo "mounting filesystems..."
-  for fs in envDescription.filesystems:
-    echo fs.path, "..."
-    createDir("/mnt/" & fs.path)
-    let (holder, onFinish) = await mount(env.instance, "/mnt/" & fs.path, fs.fs)
+  for mountInfo in envDescription.filesystems:
+    echo mountInfo.path, "..."
+    createDir("/mnt/" & mountInfo.path)
+    let (holder, onFinish) = await mount(env.instance, mountInfo)
     holders.add holder
     # TODO(?): remount
 

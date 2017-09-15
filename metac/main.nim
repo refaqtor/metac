@@ -33,5 +33,5 @@ dispatchSubcommand({
   "sshfs-mount-helper": (() => fs.sshfsMountHelper().runMain),
 
   "vm-test": (() => vm_test.main().runMain()),
-  "compute-test": (() => compute_test.main().runMain()),
+  "compute-test": (() => compute_test.main().runMain),
 })

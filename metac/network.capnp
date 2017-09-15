@@ -50,3 +50,7 @@ interface KernelInterface {
   l2Interface @2 () -> (iface :L2Interface);
   # Return L2Interface associated with this kernel interface
 }
+
+interface Router {
+  # see also: global Router implementation using MetaContainer Backplane
+}

@@ -21,7 +21,14 @@ struct MetacSturdyRef {
 
   node @0 :NodeAddress;
   service @1 :ServiceId;
+
   objectInfo @2 :AnyPointer;
+
+  # valueInfo @4 :ValueInfo;
+  ## This reference should be restored using local service.
+
+  # temporary @5 :Bool;
+  ## This reference should be exchanged into pernament one before storing.
 }
 
 struct TypedAnyPointer {

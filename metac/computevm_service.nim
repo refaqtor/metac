@@ -18,7 +18,7 @@ type
   ProcessImpl = ref object of PersistableObj
     instance: ServiceInstance
     files: seq[Stream]
-    wrapped: Process
+    wrapped: schemas.Process
     args: seq[string]
     env: ProcessEnvironmentImpl
 
@@ -44,9 +44,9 @@ proc summary(self: ProcessImpl): Future[string] {.async.} =
 proc destroy(self: ProcessImpl): Future[void] {.async.} =
   await self.kill(15)
 
-capServerImpl(ProcessImpl, [Process, Persistable, Waitable, Destroyable])
+capServerImpl(ProcessImpl, [schemas.Process, Persistable, Waitable, Destroyable])
 
-proc launchProcess(self: ProcessEnvironmentImpl, description: ProcessDescription): Future[Process] {.async.}
+proc launchProcess(self: ProcessEnvironmentImpl, description: ProcessDescription): Future[schemas.Process] {.async.}
 
 proc network(self: ProcessEnvironmentImpl, index: uint32): Future[L2Interface] {.async.} =
   discard
@@ -188,7 +188,7 @@ proc launchEnv(self: ComputeVmService, envDescription: ProcessEnvironmentDescrip
 
   return env.asProcessEnvironment
 
-proc launchProcess(self: ProcessEnvironmentImpl, description: ProcessDescription): Future[Process] {.async.} =
+proc launchProcess(self: ProcessEnvironmentImpl, description: ProcessDescription): Future[schemas.Process] {.async.} =
   if description.isNil:
     return nullCap
 

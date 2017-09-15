@@ -1,6 +1,7 @@
 [Unit]
 Description=MetaContainer bridge
 After=network.target
+PartOf=metac.target
 
 [Service]
 ExecStart=/usr/bin/metac bridge

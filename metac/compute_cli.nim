@@ -117,7 +117,7 @@ proc runCmd() {.async.} =
         let mountpoint = s[0]
         let fs = await fsFromUri(instance, s[1])
 
-        envDescription.filesystems.add(FsMount(path: mountpoint, fs: fs))
+        envDescription.filesystems.add(MountInfo(path: mountpoint, fs: fs))
       of "env", "e":
         processConfig = true
 
@@ -162,7 +162,7 @@ proc runCmd() {.async.} =
     if processDescription.args.len == 0:
       asyncRaise "command missing"
 
-  var process: Process
+  var process: schemas.Process
 
   if not existingEnv:
     let launcher = await instance.getServiceAdmin(serviceName, ComputeLauncher)

@@ -9,7 +9,7 @@ proc main*() {.async.} =
   let config = ProcessEnvironmentDescription(
     memory: 512,
     filesystems: @[
-      FsMount(path: "/bin", fs: dir)
+      MountInfo(path: "/bin", fs: dir)
     ],
     networks: @[NetworkInterface(l2interface: myNet,
                                  addresses: @["10.50.0.2/24"])]

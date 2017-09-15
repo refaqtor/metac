@@ -42,10 +42,18 @@ interface Mount {
   info @0 () -> (path :Text);
 }
 
+struct MountInfo {
+  path @0 :Text;
+  # Where to mount this filesystem? Use '/' for root filesystem.
+
+  fs @1 :Filesystem;
+  # The filesystem.
+}
+
 interface FilesystemNamespace {
   filesystem @0 () -> (fs :Filesystem);
 
-  mount @1 (path :Text, fs :Filesystem) -> (mount :Mount);
+  mount @1 (info :MountInfo) -> (mount :Mount);
   # Mounts filesystem.
   # TODO: nodevmap mount option
 

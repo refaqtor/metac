@@ -32,8 +32,9 @@ proc registerNamedService(bridge: Bridge, name: string, service: Service, adminB
   bridge.services[iid] = (service, adminBootstrap)
 
   if iid in bridge.waitFor:
-    bridge.waitFor[iid].complete
+    let completer = bridge.waitFor[iid]
     bridge.waitFor.del iid
+    completer.complete
 
   var holder: ServiceHolder
   new(holder, unregisterService)
@@ -61,7 +62,8 @@ proc waitForService(bridge: Bridge, id: schemas.ServiceId): Future[void] {.async
   if iid notin bridge.waitFor:
     bridge.waitFor[iid] = newCompleter[void]()
 
-  await bridge.waitFor[iid].getFuture
+  let completer = bridge.waitFor[iid]
+  await completer.getFuture
 
 proc getUnprivilegedNode(bridge: Bridge): Future[Node] {.async.} =
   return restrictInterfaces(bridge, Node)

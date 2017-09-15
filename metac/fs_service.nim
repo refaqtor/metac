@@ -18,7 +18,7 @@ proc main*() {.async.} =
         return localFsPersistable(instance, d.description.castAs(string)).toAnyPointer.just
       of "fs:mount":
         let params = d.description.castAs(FilesystemNamespace_mount_Params)
-        return rootNamespace.mount(params.path, params.fs).toAnyPointerFuture
+        return rootNamespace.mount(params.info).toAnyPointerFuture
       else:
         return error(AnyPointer, "unknown category " & d.category))
 

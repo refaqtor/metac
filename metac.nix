@@ -96,7 +96,7 @@ gcc -Wall -fPIC -shared ${./metac/bindfd.c} -o $out -ldl
 
   metac = options: stdenv.mkDerivation rec {
     name = "metac";
-    version = "0.0.1";
+    version = "2017.08.15.1";
     buildInputs = [nim gawk sqlite clang];
     buildPhase = ''
 cp -r ${./metac} metac
@@ -155,7 +155,8 @@ Essential: no
 Installed-Size: 1024
 Maintainer: Michał Zieliński <michal@zielinscy.org.pl>
 Description: MetaContainer - decentralized container orchestration
-Dependencies: fuse, ipset, iptables, iproute2
+Depends: fuse, ipset, iptables, iproute2
+Recommends: zerotier-one
 '';
     postinst = writeText "postinst" ''
 systemctl daemon-reload
@@ -164,6 +165,10 @@ systemctl enable metac-bridge
 for name in persistence vm fs network computevm desktop; do
     systemctl enable metac-$name
 done
+if [ ! -e /etc/default/metac ]; then
+    echo '# Configure IPv6 address for MetaContainer to listen on.
+METAC_ADDRESS=xxxx'
+fi
 '';
   };
 

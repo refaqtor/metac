@@ -13,3 +13,6 @@ dispatchGen(destroyCmd)
 
 proc mainDestroy*() =
   dispatchDestroyCmd(argv, doc="Destroy any destroyable object pointed by [uri].").quit
+
+proc mainJoinTestnet() =
+  nil

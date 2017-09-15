@@ -1,3 +1,6 @@
+- rename MetaContainer to NiContainer
+- metac -> nic
+
 - check TCP_NODELAY!!!
 
 - add screencast style GIFs
@@ -14,6 +17,11 @@
 ** VM
 - cli
 - VNC support
+
+** host
+- `metac host export local:`
+- `metac host add myserver: ref://...`
+- `metac desktop attach myserver/localx11:`
 
 * sandboxing
 write dropcap.so that drop caps on LD_PRELOAD

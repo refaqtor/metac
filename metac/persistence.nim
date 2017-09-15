@@ -95,11 +95,11 @@ proc parseSturdyRef*(s: string): MetacSturdyRef =
 proc makePersistentPayload(data: AnyPointer, rgroup: ResourceGroup): Future[PersistentPayload] {.async.} =
   var caps: seq[CapServer] = @[]
 
-  proc capToIndex(cap: CapServer): int =
+  proc capToIndex(cap: CapServer): RawCapValue =
     if cap.isNullCap:
-      return -1
+      return RawCapValue(number: -1)
     caps.add(cap)
-    return caps.len - 1
+    return RawCapValue(number: caps.len - 1)
 
   let newData = data.packNow(capToIndex)
   var capTable: seq[MetacSturdyRef] = @[]
@@ -115,11 +115,16 @@ proc unpackPersistentPayload(instance: Instance, payload: PersistentPayload): Fu
     let cap = await instance.restore(item).castAs(CapServer)
     caps.add cap
 
-  payload.content.setCapGetter(proc(id: int): CapServer =
+  payload.content.setCapGetter(proc(val: RawCapValue): CapServer =
+                                 case val.kind:
+                                 of rawCapNumber:
+                                   let id = val.number
                                    if id == -1: return nullCap
                                    if id < 0 or id >= caps.len:
                                      raise newException(system.Exception, "invalid capability")
-                                   return caps[id])
+                                   return caps[id]
+                                 else:
+                                   raise newException(system.Exception, "invalid type"))
   return payload.content
 
 

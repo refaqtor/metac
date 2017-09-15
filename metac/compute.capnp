@@ -14,7 +14,7 @@ interface ComputeLauncher {
 struct ProcessEnvironmentDescription {
   # Represents a description of an environment (e.g. container) for running processes.
 
-  filesystems @0 :List(FsMount);
+  filesystems @0 :List(Fs.MountInfo);
   # List of filesystems to mount.
 
   networks @1 :List(NetworkInterface);
@@ -22,14 +22,6 @@ struct ProcessEnvironmentDescription {
 
   memory @2 :UInt32;
   # Memory allocation for this environment (in MiB).
-}
-
-struct FsMount {
-  path @0 :Text;
-  # Where to mount this filesystem? Use '/' for root filesystem.
-
-  fs @1 :Fs.Filesystem;
-  # The filesystem.
 }
 
 struct NetworkInterface {

@@ -48,7 +48,7 @@ proc mountCmd(uri: string, path: string, persistent=false) =
     let instance = await newInstance()
     let fs = await instance.fileFromUri(uri, schemas.Filesystem)
     let fsService = await instance.getServiceAdmin("fs", FilesystemServiceAdmin)
-    let mnt = await fsService.rootNamespace.mount(path, fs)
+    let mnt = await fsService.rootNamespace.mount(MountInfo(path: path, fs: fs))
 
     let sref = await mnt.castAs(schemas.Persistable).createSturdyRef(nullCap, persistent)
     echo sref.formatSturdyRef
