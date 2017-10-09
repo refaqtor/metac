@@ -18,7 +18,7 @@ proc catCmd(uri: string) =
     let instance = await newInstance()
     let stream = await instance.restore(parseSturdyRef(uri)).castAs(Stream)
     let fd = await instance.unwrapStreamAsPipe(stream)
-    await zip(@[
+    await zipVoid(@[
       pipe(createInputFromFd(0), fd.output),
       pipe(fd.input, createOutputFromFd(1)),
     ])

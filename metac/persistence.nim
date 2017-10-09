@@ -97,9 +97,9 @@ proc makePersistentPayload(data: AnyPointer, rgroup: ResourceGroup): Future[Pers
 
   proc capToIndex(cap: CapServer): RawCapValue =
     if cap.isNullCap:
-      return RawCapValue(number: -1)
+      return RawCapValue(kind: rawCapNumber, number: -1)
     caps.add(cap)
-    return RawCapValue(number: caps.len - 1)
+    return RawCapValue(kind: rawCapNumber, number: caps.len - 1)
 
   let newData = data.packNow(capToIndex)
   var capTable: seq[MetacSturdyRef] = @[]

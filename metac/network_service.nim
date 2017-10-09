@@ -22,8 +22,9 @@ capServerImpl(BindToImpl, [Holder, Persistable, Waitable])
 
 const auxLinkAlias = "managed by metac network"
 
-proc htons(a: uint16): uint16 =
-  return cast[uint16](htons(cast[int16](a)))
+when not compiles(htons(uint16(1))):
+  proc htons(a: uint16): uint16 =
+    return cast[uint16](htons(cast[int16](a)))
 
 proc reserveVxlanPort(address: string, port: uint16=0): tuple[sock: SocketHandle, port: int] =
   assert parseAddress(address).kind == ip6
