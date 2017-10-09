@@ -114,6 +114,7 @@ cp ${sftpServer}/bin/sftp-server $out/bin/sftp-server
 cp ${tigervnc}/bin/{Xvnc,vncviewer,x0vncserver} $out/bin/
 cp ${bindfd} $out/bin/bindfd.so
 nim c ${nimArgs options} -d:withSqlite -d:kernelPath="../share/metac/vmlinuz" -d:initrdPath="../share/metac/initrd" --out:$out/bin/metac -d:sshfsPath="sshfs" -d:sftpServerPath="sftp-server" metac/main.nim
+ln -s metac $out/bin/mcp
 '';
     phases = ["buildPhase" "fixupPhase"];
   };

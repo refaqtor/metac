@@ -28,21 +28,20 @@ defineExporter(fileExportCmd, fileFromUri)
 
 proc catCmd(uri: string) =
   if uri == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
     let file = await instance.fileFromUri(uri, schemas.File)
     let stream = await file.openAsStream()
     let fd = await instance.unwrapStreamAsPipe(stream)
-    let data = await fd.input.readUntilEof()
-    echo data
+    await pipe(fd.input, createOutputFromFd(1))
 
-dispatchGen(catCmd)
+dispatchGen(catCmd, "metac file cat", doc="Show file contests.")
 
 proc mountCmd(uri: string, path: string, persistent=false) =
   if uri == nil or path == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -53,11 +52,11 @@ proc mountCmd(uri: string, path: string, persistent=false) =
     let sref = await mnt.castAs(schemas.Persistable).createSturdyRef(nullCap, persistent)
     echo sref.formatSturdyRef
 
-dispatchGen(mountCmd)
+dispatchGen(mountCmd, "metac fs mount", doc="Mount a filesystem on a local path.")
 
 proc openCmd(uri: string, persistent=false) =
   if uri == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -67,17 +66,31 @@ proc openCmd(uri: string, persistent=false) =
     let sref = await stream.castAs(schemas.Persistable).createSturdyRef(nullCap, persistent)
     echo sref.formatSturdyRef
 
-dispatchGen(openCmd)
+dispatchGen(openCmd, cmdName="metac file open", doc="Turn a file into a stream.")
+
+proc cpCmd(src: string, dst: string) =
+  if src == nil or dst == nil:
+    raise newException(InvalidArgumentException, "")
+
+  asyncMain:
+    let instance = await newInstance()
+    let srcFile = await instance.fsFromUri(src)
+    let dstFile = await instance.fsFromUri(dst)
+    # TODO: copy
+    discard
+
+dispatchGen(cpCmd, "metac fs cp", doc="Copy files from [src] to [dst].")
 
 proc mainFile*() =
   dispatchSubcommand({
     "export": () => quit(dispatchFileExportCmd(argv, doc="")),
     "cat": () => quit(dispatchCatCmd(argv, doc="Print the file content to the standard output.")),
-    "open": () => quit(dispatchCatCmd(argv, doc="Turn a file into a stream.")),
+    "open": () => quit(dispatchOpenCmd(argv)),
   })
 
 proc mainFs*() =
   dispatchSubcommand({
-    "export": () => quit(dispatchFsExportCmd(argv, doc="")),
-    "mount": () => quit(dispatchMountCmd(argv, doc=""))
+    "export": () => quit(dispatchFsExportCmd(argv)),
+    "mount": () => quit(dispatchMountCmd(argv)),
+    "cp": () => quit(dispatchCpCmd(argv)),
   })

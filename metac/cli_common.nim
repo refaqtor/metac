@@ -8,7 +8,7 @@ proc castAsPersistable[T](t: T): Persistable =
 template defineExporter*(name, makeuri) =
   proc name(uri: string, persistent=false) =
     if uri == nil:
-      quit("missing required parameter")
+      raise newException(InvalidArgumentException, "")
 
     asyncMain:
       let instance = await newInstance()
@@ -16,7 +16,11 @@ template defineExporter*(name, makeuri) =
       let sref = await castAsPersistable(item).createSturdyRef(nullCap, persistent)
       echo sref.formatSturdyRef
 
-  dispatchGen(name)
+  dispatchGen(name, "metac xxx export", help="Export object as a sturdy URL.")
+
+proc argv0Alias*(argv0: string, params: seq[string]) =
+  if paramStr(0).split("/")[^1] == argv0:
+    argv = params & argv
 
 proc dispatchSubcommand*[T](handlers: openarray[(string, T)]) =
   # use T instead of proc() to workaround {.locks: <unknown>.}

@@ -2,17 +2,17 @@ import metac/cli_common
 
 proc destroyCmd(uri: string) =
   if uri == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
     let obj = await instance.restore(uri.parseSturdyRef).castAs(Destroyable)
     await obj.destroy
 
-dispatchGen(destroyCmd)
+dispatchGen(destroyCmd, "metac destroy", doc="Destroy any destroyable object pointed by [uri].")
 
 proc mainDestroy*() =
-  dispatchDestroyCmd(argv, doc="Destroy any destroyable object pointed by [uri].").quit
+  dispatchDestroyCmd(argv).quit
 
 proc mainJoinTestnet() =
   nil

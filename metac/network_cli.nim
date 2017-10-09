@@ -19,7 +19,7 @@ proc netFromUri*(instance: Instance, uri: string): Future[L2Interface] {.async.}
 
 proc exportCmd(uri: string, persistent=false) =
   if uri == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -27,11 +27,11 @@ proc exportCmd(uri: string, persistent=false) =
     let sref = await file.castAs(schemas.Persistable).createSturdyRef(nullCap, persistent)
     echo sref.formatSturdyRef
 
-dispatchGen(exportCmd)
+dispatchGen(exportCmd, "metac net export")
 
 proc bindCmd(uri1: string, uri2: string, persistent=false) =
   if uri1 == nil or uri2 == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -41,10 +41,10 @@ proc bindCmd(uri1: string, uri2: string, persistent=false) =
     let sref = await holder.castAs(Persistable).createSturdyRef(nullCap, persistent)
     echo sref.formatSturdyRef
 
-dispatchGen(bindCmd)
+dispatchGen(bindCmd, "metac net bind")
 
 proc main*() =
   dispatchSubcommand({
-    "export": () => quit(dispatchExportCmd(argv, doc="")),
-    "bind": () => quit(dispatchBindCmd(argv, doc=""))
+    "export": () => quit(dispatchExportCmd(argv)),
+    "bind": () => quit(dispatchBindCmd(argv))
   })

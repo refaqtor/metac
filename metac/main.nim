@@ -5,6 +5,8 @@ import metac/bridge, metac/vm, metac/fs, metac/persistence_service, metac/comput
 import metac/fs_cli, metac/stream_cli, metac/network_cli, metac/sound_cli, metac/persistence_cli, metac/compute_cli, metac/common_cli, metac/desktop_cli, metac/vm_cli
 import tests/vm_test, tests/compute_test
 
+argv0Alias("mcp", @["fs", "cp"])
+
 dispatchSubcommand({
   "file": (() => fs_cli.mainFile()),
   "fs": (() => fs_cli.mainFs()),

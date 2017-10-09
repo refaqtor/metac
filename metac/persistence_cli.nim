@@ -19,7 +19,7 @@ proc listCmd() =
 
     renderTable(table)
 
-dispatchGen(listCmd)
+dispatchGen(listCmd, "metac obj ls", doc="Returns list of saved objects.")
 
 proc findObjectById(admin: PersistenceServiceAdmin, runtimeId: string): Future[PersistentObjectInfo] {.async.} =
   let objects = await admin.listObjects
@@ -42,7 +42,7 @@ proc findObjectById(admin: PersistenceServiceAdmin, runtimeId: string): Future[P
 
 proc rmCmd(runtimeId: string) =
   if runtimeId == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -51,17 +51,17 @@ proc rmCmd(runtimeId: string) =
     let obj = await findObjectById(admin, runtimeId)
     await admin.forgetObject(obj.service, obj.runtimeId)
 
-dispatchGen(rmCmd)
+dispatchGen(rmCmd, "metac obj rm", doc="Forget about a saved object.")
 
 proc mainObj*() =
   dispatchSubcommand({
-    "ls": () => quit(dispatchListCmd(argv, doc="Returns list of saved objects.")),
-    "rm": () => quit(dispatchRmCmd(argv, doc="Forget about a saved object.")),
+    "ls": () => quit(dispatchListCmd(argv)),
+    "rm": () => quit(dispatchRmCmd(argv)),
   })
 
 proc listRefCmd(runtimeId: string) =
   if runtimeId == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -77,9 +77,9 @@ proc listRefCmd(runtimeId: string) =
 
     renderTable(table)
 
-dispatchGen(listRefCmd)
+dispatchGen(listRefCmd, "metac ref ls", doc="Returns list of references to a given object.")
 
 proc mainRef*() =
   dispatchSubcommand({
-    "ls": () => quit(dispatchListRefCmd(argv, doc="Returns list of references to a given object.")),
+    "ls": () => quit(dispatchListRefCmd(argv)),
   })

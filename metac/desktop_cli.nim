@@ -28,7 +28,7 @@ defineExporter(desktopExportCmd, desktopFromUri)
 
 proc attachCmd(uri: string) =
   if uri == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -42,10 +42,10 @@ proc attachCmd(uri: string) =
                                additionalEnv = @[("LD_PRELOAD", getAppDir() / bindfdPath), ("CONNECT_FD", "4")])
     discard await process.wait
 
-dispatchGen(attachCmd)
+dispatchGen(attachCmd, "metac desktop attach", doc="Attach to a remote desktop.")
 
 proc main*() =
   dispatchSubcommand({
-    "export": () => quit(dispatchDesktopExportCmd(argv, doc="")),
-    "attach": () => quit(dispatchAttachCmd(argv, doc="")),
+    "export": () => quit(dispatchDesktopExportCmd(argv)),
+    "attach": () => quit(dispatchAttachCmd(argv)),
   })

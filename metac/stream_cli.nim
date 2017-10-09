@@ -12,7 +12,7 @@ proc streamFromUri*(instance: Instance, uri: string): Future[Stream] {.async.} =
 
 proc catCmd(uri: string) =
   if uri == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -23,11 +23,11 @@ proc catCmd(uri: string) =
       pipe(fd.input, createOutputFromFd(1)),
     ])
 
-dispatchGen(catCmd)
+dispatchGen(catCmd, "metac stream cat", doc="Pipe data between stream and stdin/stdout.")
 
 proc runConnectFdCmd(uri: string, args: seq[string]) =
   if uri == nil or args.len == 0:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -40,10 +40,11 @@ proc runConnectFdCmd(uri: string, args: seq[string]) =
     fakeUsage(holder)
     quit(code)
 
-dispatchGen(runConnectFdCmd)
+dispatchGen(runConnectFdCmd, "metac stream run-connectfd",
+            doc="Run a process with TCP port 1 redirected to stream `uri` (uses bindfd.so LD_PRELOAD) ")
 
 proc main*() =
   dispatchSubcommand({
-    "cat": () => quit(dispatchCatCmd(argv, doc="")),
-    "run-connectfd": () => quit(dispatchRunConnectFdCmd(argv, doc="Run a process with TCP port 1 redirected to stream `uri` (uses bindfd.so LD_PRELOAD) ")),
+    "cat": () => quit(dispatchCatCmd(argv)),
+    "run-connectfd": () => quit(dispatchRunConnectFdCmd(argv)),
   })

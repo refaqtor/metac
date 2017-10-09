@@ -23,7 +23,7 @@ proc soundDeviceFromUri*(instance: Instance, uri: string): Future[SoundDevice] {
 
 proc exportCmd(uri: string, persistent=false) =
   if uri == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -31,11 +31,11 @@ proc exportCmd(uri: string, persistent=false) =
     let sref = await dev.castAs(schemas.Persistable).createSturdyRef(nullCap, persistent)
     echo sref.formatSturdyRef
 
-dispatchGen(exportCmd)
+dispatchGen(exportCmd, "metac sound export", doc="Export sound device into a sturdy URL.")
 
 proc bindCmd(uri1: string, uri2: string, persistent=false) =
   if uri1 == nil or uri2 == nil:
-    quit("missing required parameter")
+    raise newException(InvalidArgumentException, "")
 
   asyncMain:
     let instance = await newInstance()
@@ -45,7 +45,7 @@ proc bindCmd(uri1: string, uri2: string, persistent=false) =
     let sref = await holder.castAs(Persistable).createSturdyRef(nullCap, persistent)
     echo sref.formatSturdyRef
 
-dispatchGen(bindCmd)
+dispatchGen(bindCmd, "metac sound bind", doc="Bind two sound devices together.")
 
 proc listCmd() =
   asyncMain:
@@ -56,11 +56,11 @@ proc listCmd() =
       let info = await dev.info()
       echo info.name
 
-dispatchGen(listCmd)
+dispatchGen(listCmd, "metac sound ls", doc="List available sound devices.")
 
 proc main*() =
   dispatchSubcommand({
-    "export": () => quit(dispatchExportCmd(argv, doc="")),
-    "bind": () => quit(dispatchBindCmd(argv, doc="")),
-    "ls": () => quit(dispatchListCmd(argv, doc=""))
+    "export": () => quit(dispatchExportCmd(argv)),
+    "bind": () => quit(dispatchBindCmd(argv)),
+    "ls": () => quit(dispatchListCmd(argv))
   })
