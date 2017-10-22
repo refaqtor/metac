@@ -26,14 +26,15 @@ proc info(self: SoundDeviceImpl): Future[SoundDeviceInfo] {.async.} =
 proc opusStream(self: SoundDeviceImpl): Future[Stream] {.async.} =
   # be somehow more intelligent about format and OPUS parameters
   # (and use RTP in future)
-  let opts = "--file-format=wav -d $1" % [quoteShell(self.name)]
+  let opts = "-d $1" % [quoteShell(self.name)]
   var cmd: string
   if self.isSink:
-    cmd = "opusdec --force-wav - - | paplay $1" % [opts]
+    cmd = "opusdec --force-wav - - | paplay --file-format=wav $1 /proc/self/fd/0" % [opts]
   else:
-    cmd = "parec --channels=2 --format=s16le --rate=44100 $1 | opusenc --max-delay 100 --raw --raw-bits 16 --raw-rate 44100 --raw-chan 2 - -" % [opts]
+    cmd = "parec --channels=2 --format=s16le --rate=44100 --file-format=raw $1 /proc/self/fd/1 | opusenc --max-delay 120 --framesize 60 --raw --raw-bits 16 --raw-rate 44100 --raw-chan 2 - -" % [opts]
 
   let pFd: cint = if self.isSink: 0 else: 1
+  echo "launching ", cmd
   let process = startProcess(@["sh", "-c", cmd],
                              additionalFiles = @[(2.cint, 2.cint)],
                              additionalEnv = @[("PULSE_SERVER", "unix:" & self.mixer.socketPath)],
@@ -41,8 +42,8 @@ proc opusStream(self: SoundDeviceImpl): Future[Stream] {.async.} =
   return self.mixer.instance.wrapStream(process.files[0])
 
 proc bindTo(self: SoundDeviceImpl, other: SoundDevice): Future[Holder] {.async.} =
-  let selfStream = await other.opusStream
-  let otherStream = await self.opusStream
+  let selfStream = await self.opusStream
+  let otherStream = await other.opusStream
   return selfStream.bindTo(otherStream)
 
 capServerImpl(SoundDeviceImpl, [SoundDevice])
@@ -50,7 +51,7 @@ capServerImpl(SoundDeviceImpl, [SoundDevice])
 proc createDevice(self: MixerImpl, name: string, sink: bool): Future[SoundDevice] {.async.} =
   let name = "metac." & hexUrandom(5) & "." & name
   let sinkOrSource = if sink: "sink" else: "source"
-  await execCmd(@["pactl", "--server=" & self.socketPath, "load-module", "null-" & sinkOrSource, sinkOrSource & "_name=" & name])
+  await execCmd(@["pactl", "--server=" & self.socketPath, "load-module", "module-null-" & sinkOrSource, sinkOrSource & "_name=" & name, sinkOrSource & "_properties=device.description=" & name])
   let monitorName = name & ".monitor"
 
   return SoundDeviceImpl(mixer: self, isSink: not sink, name: monitorName).asSoundDevice
