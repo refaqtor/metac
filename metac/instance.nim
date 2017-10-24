@@ -19,17 +19,18 @@ let notAuthorized* = inlineCap(CapServer, CapServerInlineImpl(
              return now(error(AnyPointer, "not authorized to access admin interface (run as root)")))
 ))
 
-proc newInstance*(address: string): Future[Instance] {.async.} =
+proc newInstance*(): Future[Instance] {.async.} =
   let self = Instance()
-  self.isAdmin = getuid() == 0
-  self.address = address
   self.localRequests = newTable[string, RootRef]()
 
   var conn: BytePipe
-  if self.isAdmin:
-    conn = await connectUnix("/run/metac/" & address & "/socket")
+  let userSocket = "/run/metac/user/$1/socket" % [$getuid()]
+
+  if access(userSocket, F_OK) == 0:
+    self.isAdmin = true
+    conn = await connectUnix(userSocket)
   else:
-    conn = await connectTcp(address, 901)
+    conn = await connectTcp("::1", 901)
 
   self.rpcSystem = newRpcSystem(newTwoPartyNetwork(conn, Side.client).asVatNetwork)
 
@@ -40,16 +41,10 @@ proc newInstance*(address: string): Future[Instance] {.async.} =
     self.thisNodeAdmin = NodeAdmin.createFromCap(notAuthorized)
     self.thisNode = (await self.rpcSystem.bootstrap()).castAs(Node)
 
+  let nodeAddr = await self.thisNode.address()
+  self.address = nodeAddr.ip
+
   return self
-
-proc newInstance*(): Future[Instance] =
-  if not existsEnv("METAC_ADDRESS"):
-    for entry in walkDir("/run/metac", relative=true):
-      return newInstance(entry.path)
-  else:
-     return newInstance(getEnv("METAC_ADDRESS"))
-
-  raise newException(Exception, "no instance in /run/metac, please run 'metac bridge'")
 
 proc nodeAddress*(instance: Instance): NodeAddress =
   return NodeAddress(ip: instance.address)
@@ -58,8 +53,14 @@ proc getServiceAdmin*[T](instance: Instance, name: string, typ: typedesc[T]): Fu
   let service = await instance.thisNodeAdmin.getServiceAdmin(name)
   return service.castAs(T)
 
+proc translateServiceName*(name: string): string =
+  if getuid() == 0:
+    return name
+  else:
+    return "user-$1-$2" % [$getuid(), name]
+
 proc waitForService*(instance: Instance, name: string): Future[void] {.async.} =
-  await instance.thisNode.waitForService(ServiceId(kind: ServiceIdKind.named, named: name))
+  await instance.thisNode.waitForService(ServiceId(kind: ServiceIdKind.named, named: translateServiceName(name)))
 
 proc connect*(instance: Instance, address: NodeAddress): Future[Node] {.async.} =
   # TODO: multiparty RpcSystem

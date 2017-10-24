@@ -43,7 +43,7 @@ proc injectPersistence*[T](cap: T, delegate: PersistenceDelegate): T =
     summary: (proc(): Future[string] = just("call on $1" % name(T))))).toCapServer)
 
 proc injectPersistence*[T](instance: ServiceInstance, cap: T, category: string, description: AnyPointer, runtimeId: string=nil): T =
-  return injectPersistence(instance, cap, makePersistenceDelegate(category, description, runtimeId))
+  return injectPersistence(cap, makePersistenceDelegate(instance, category, description, runtimeId))
 
 # proc callWithPersistence*[T, A](instance: ServiceInstance, cap: T, args: A, runtimeId: string = nil): auto =
 #   let delegate = makePersistenceCallDelegate(instance, cap, args, runtimeId)
@@ -63,34 +63,14 @@ proc restore*(instance: Instance, m: MetacSturdyRef): Future[AnyPointer] =
   return instance.connect(m.node).getService(m.service).restore(m.objectInfo)
 
 proc formatSturdyRef*(m: MetacSturdyRef): string =
-  if not validIdentifier(m.service.named):
-    raise newException(Exception, "invalid service name")
-
-  discard parseAddress(m.node.ip)
-
-  let name = if m.service.named == "persistence": ""
-             else: m.service.named & "/"
-
-  return "ref://[" & m.node.ip & "]/" & name & urlsafeBase64Encode(packPointer(m.objectInfo).compressCapnp)
+  return "ref:" & (urlsafeBase64Encode(packPointer(m).compressCapnp).replace("\L", ""))
 
 proc parseSturdyRef*(s: string): MetacSturdyRef =
-  if not s.startswith("ref://"):
-    raise newException(ValueError, "invalid sturdy ref ($1), doesn't begin with ref://" % s)
+  if not s.startswith("ref:"):
+    raise newException(ValueError, "invalid sturdy ref ($1), doesn't begin with ref:" % s)
 
-  let spl = s.split('/')
-  if spl.len notin {4, 5}:
-    raise newException(ValueError, "invalid sturdy ref ($1), too many slashes")
-  let ip = spl[2].strip(trailing=false, chars={'['}).strip(leading=false, chars={']'})
-  let serviceName = if spl.len == 4: "persistence"
-                    else: spl[3]
-  let data = spl[^1]
-  if not validIdentifier(serviceName):
-    raise newException(ValueError, "invalid service name")
-  let objectInfo = newUnpackerFlat(urlsafeBase64Decode(data).decompressCapnp).unpackPointer(0, AnyPointer)
-
-  return MetacSturdyRef(node: NodeAddress(ip: ip),
-                        service: ServiceId(kind: ServiceIdKind.named, named: serviceName),
-                        objectInfo: objectInfo)
+  let data = s.split(':')[1]
+  return newUnpackerFlat(urlsafeBase64Decode(data).decompressCapnp).unpackPointer(0, MetacSturdyRef)
 
 proc makePersistentPayload(data: AnyPointer, rgroup: ResourceGroup): Future[PersistentPayload] {.async.} =
   var caps: seq[CapServer] = @[]

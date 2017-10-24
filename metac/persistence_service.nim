@@ -1,4 +1,4 @@
-import tables, reactor, capnp, caprpc, strutils, metac/schemas, metac/instance, collections, db_sqlite, metac/persistence, os
+import tables, reactor, capnp, caprpc, strutils, metac/schemas, metac/instance, collections, db_sqlite, metac/persistence, os, posix
 
 type
   PersistenceServiceImpl = ref object of RootObj
@@ -187,8 +187,10 @@ proc createSturdyRef(self: ServicePersistenceHandlerImpl; rgroup: ResourceGroup;
 
     self.addPersistentRef(storedCap, sturdyRefId)
 
+  let myServiceName = if getuid() == 0: "persistence"
+                      else: "user-$1-persistence" % [$getuid()]
   return MetacSturdyRef(node: self.instance.nodeAddress,
-                        service: ServiceId(kind: ServiceIdKind.named, named: "persistence"),
+                        service: ServiceId(kind: ServiceIdKind.named, named: myServiceName),
                         objectInfo: sturdyRef.toAnyPointer)
 
 capServerImpl(ServicePersistenceHandlerImpl, [ServicePersistenceHandler])
@@ -254,8 +256,10 @@ capServerImpl(PersistenceServiceImpl, [PersistenceServiceAdmin, Service, Service
 proc initService(instance: ServiceInstance): PersistenceServiceImpl =
   let path = if existsEnv("METAC_PERSISTENCE_DB"):
                getEnv("METAC_PERSISTENCE_DB")
-             else:
+             elif getuid() == 0:
                "/var/lib/metac/persistence.db"
+             else:
+               getenv("HOME") & "/.config/metac/persistence.db"
   createDir(splitPath(path).head)
   let self = PersistenceServiceImpl(handlers: newTable[string, ServicePersistenceHandlerImpl](),
                                     instance: instance,

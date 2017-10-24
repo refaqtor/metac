@@ -8,7 +8,7 @@ proc stdoutOutput(tag: string): ByteOutput =
   return asyncPipe(fun)
 
 proc main*() {.async.} =
-  let instance = await newInstance("fdca:ddf9:5703::1")
+  let instance = await newInstance()
   let serv = instance.thisNodeAdmin.getServiceAdmin("vm").await.toAnyPointer.castAs(VMServiceAdmin)
   let launcher = await serv.getLauncher
 

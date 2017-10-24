@@ -1,4 +1,4 @@
-import capnp, reactor, metac/schemas, collections, os, reactor/unix, metac/process_util
+import capnp, reactor, metac/schemas, collections, os, reactor/unix, metac/process_util, sequtils, posix
 
 type
   InternalServiceId = tuple[isNamed: bool, name: string]
@@ -74,32 +74,72 @@ proc registerAnonymousService(bridge: Bridge, service: Service): Future[Node_reg
 proc address(bridge: Bridge): Future[NodeAddress] {.async.} =
   return NodeAddress(ip: bridge.nodeAddress)
 
+proc startHusarnet(): Future[string] {.async.} =
+  doAssert false, "todo"
+
+proc createRestrictedBridgeAdmin(bridge: Bridge, prefix: string): NodeAdmin =
+  return inlineCap(NodeAdmin, NodeAdminInlineImpl(
+    getServiceAdmin: (
+      proc(name: string): auto =
+        return bridge.getServiceAdmin(prefix & name)),
+    registerNamedService: (
+      proc(name: string, service: Service, adminBootstrap: ServiceAdmin): auto =
+        return bridge.registerNamedService(prefix & name, service, adminBootstrap)),
+    getUnprivilegedNode: (proc(): auto = bridge.getUnprivilegedNode())
+  ))
+
 proc main*() {.async.} =
   enableGcNoDelay()
 
-  let nodeAddr = if existsEnv("METAC_ADDRESS"):
-                   getEnv("METAC_ADDRESS")
-                 else:
-                   paramStr(2)
-  let baseDir = "/run/metac/" & nodeAddr
+  var nodeAddr: string
+
+  if existsEnv("METAC_MANUAL_NETWORK"):
+    nodeAddr = getEnv("METAC_ADDRESS")
+  else:
+    nodeAddr = await startHusarnet()
+
+  let baseDir = "/run/metac/"
   createDir("/run/metac")
-  createDir(baseDir)
 
   let bridge = Bridge(services: newTable[InternalServiceId, ServiceInfo](),
                       waitFor: newTable[InternalServiceId, Completer[void]](),
                       nodeAddress: nodeAddr)
 
-  let node = restrictInterfaces(bridge, Node)
-  let nodeAdmin = restrictInterfaces(bridge, NodeAdmin)
 
-  let socketPath = baseDir & "/socket"
-  removeFile(socketPath)
+  let node = restrictInterfaces(bridge, Node)
 
   let tcpServer = await createTcpServer(addresses = @[parseAddress(nodeAddr)], port=901)
   tcpServer.incomingConnections.forEach(proc(conn: auto) = discard newTwoPartyServer(conn, node.toCapServer)).ignore
 
-  let unixServer = createUnixServer(socketPath)
-  unixServer.incomingConnections.forEach(proc(conn: auto) = discard newTwoPartyServer(conn, nodeAdmin.toCapServer)).ignore
+  var users = getEnv("METAC_ALLOWED_USERS").splitWhitespace().map(x => parseInt(x))
+  users.add(0)
+
+  createDir(baseDir)
+  createDir(baseDir & "/user")
+
+  for user in users:
+    let socketDir = baseDir & "/user/" & ($user)
+
+    if not existsDir(socketDir):
+      if mkdir(socketDir, 0o700) != 0:
+        raiseOSError(osLastError())
+
+    if chown(socketDir, user, 0) != 0:
+      raiseOSError(osLastError())
+
+    let socketPath = socketDir & "/socket"
+    removeFile(socketPath)
+    let unixServer = createUnixServer(socketPath)
+
+    if chown(socketPath, user, 0) != 0:
+      raiseOSError(osLastError())
+
+    (proc(user: int) =
+       let prefix = if user == 0: ""
+                    else: ("user-" & $user & "-")
+       let nodeAdmin = createRestrictedBridgeAdmin(bridge, prefix)
+       unixServer.incomingConnections.forEach(proc(conn: auto) = discard newTwoPartyServer(conn, nodeAdmin.toCapServer)).ignore
+    )(user)
 
   await systemdNotifyReady()
   await waitForever()
