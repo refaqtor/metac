@@ -45,8 +45,8 @@ interface Mixer {
 }
 
 interface SoundServiceAdmin {
-    getSystemMixer @0 () -> (mixer :Mixer);
+    getDefaultMixer @0 () -> (mixer :Mixer);
     # Get system mixer.
     #
-    # The default implementation starts a new PulseAudio instance.
+    # The default implementation starts a new PulseAudio instance (if running as root) or uses default user instance (if not running as root).
 }

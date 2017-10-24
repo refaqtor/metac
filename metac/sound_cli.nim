@@ -6,7 +6,7 @@ proc soundDeviceFromUri*(instance: Instance, uri: string): Future[SoundDevice] {
   let path = if s.len > 1: s[1] else: ""
 
   let soundService = await instance.getServiceAdmin("sound", SoundServiceAdmin)
-  let ns = soundService.getSystemMixer
+  let ns = soundService.getDefaultMixer
 
   if schema == "localsink":
     return ns.getSink(path)
@@ -51,7 +51,7 @@ proc listCmd() =
   asyncMain:
     let instance = await newInstance()
     let soundService = await instance.getServiceAdmin("sound", SoundServiceAdmin)
-    let devList = await soundService.getSystemMixer.getDevices
+    let devList = await soundService.getDefaultMixer.getDevices
     for dev in devList:
       let info = await dev.info()
       echo info.name
