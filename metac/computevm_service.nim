@@ -125,8 +125,8 @@ proc launchEnv(self: ComputeVmService, envDescription: ProcessEnvironmentDescrip
   env.description = envDescription
   env.persistenceDelegate = self.instance.makePersistenceDelegate("computevm:env", description=envDescription.toAnyPointer, runtimeId=nil)
 
-  let kernel = localFile(self.instance, expandFilename(getAppDir() / kernelPath))
-  let initrd = localFile(self.instance, expandFilename(getAppDir() / initrdPath))
+  let kernel = localFile(self.instance, FsInfo(path: expandFilename(getAppDir() / kernelPath)))
+  let initrd = localFile(self.instance, FsInfo(path: expandFilename(getAppDir() / initrdPath)))
   var cmdline = "console=ttyS0 "
 
   let netNamespace = await self.instance.getServiceAdmin("network", NetworkServiceAdmin).rootNamespace

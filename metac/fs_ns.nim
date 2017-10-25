@@ -19,7 +19,10 @@ proc wait(m: LocalFsMount): Future[void] {.async.} =
 capServerImpl(LocalFsMount, [Mount, Persistable, Waitable])
 
 proc filesystem(ns: LocalNamespace): Future[Filesystem] {.async.} =
-  return localFsPersistable(ns.instance, "/")
+  return localFsPersistable(ns.instance, FsInfo(path: "/", uid: 0, gid: 0))
+
+proc filesystemForUser(ns: LocalNamespace, uid: uint32, gid: uint32): Future[Filesystem] {.async.} =
+  return localFsPersistable(ns.instance, FsInfo(path: "/", uid: uid, gid: gid))
 
 proc mount(ns: LocalNamespace, mountInfo: MountInfo): Future[Mount] {.async.}
 proc listMounts(ns: LocalNamespace): Future[seq[Mount]] {.async.}

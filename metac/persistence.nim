@@ -63,7 +63,7 @@ proc restore*(instance: Instance, m: MetacSturdyRef): Future[AnyPointer] =
   return instance.connect(m.node).getService(m.service).restore(m.objectInfo)
 
 proc formatSturdyRef*(m: MetacSturdyRef): string =
-  return "ref:" & (urlsafeBase64Encode(packPointer(m).compressCapnp).replace("\L", ""))
+  return "ref:" & (urlsafeBase64Encode(packPointer(m).compressCapnp))
 
 proc parseSturdyRef*(s: string): MetacSturdyRef =
   if not s.startswith("ref:"):

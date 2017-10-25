@@ -1,15 +1,27 @@
 import reactor, capnp, metac/instance, metac/schemas, metac/stream, metac/persistence, metac/cli_common, strutils, collections, cligen
 
 proc fileFromUri*[T: schemas.File|Filesystem](instance: Instance, uri: string, typ: typedesc[T]): Future[T] {.async.} =
-  let s = uri.split(":", 1)
-  let schema = s[0]
-  let path = s[1]
+  var (schema, path) = uri.split2(":")
 
   var root: Filesystem
   if schema == "local":
+    var uid = uint32(0)
+    var gid = uint32(0)
+
+    while not path.startswith('/'):
+      let (curr, rest) = path.split2(",")
+      path = rest
+      let (k, v) = curr.split2("=")
+      if k == "uid":
+        uid = parseBiggestInt(v).uint32
+      elif k == "gid":
+        gid = parseBiggestInt(v).uint32
+      else:
+        raise newException(ValueError, "invalid URI option $1" % [k])
+
     let fsService = await instance.getServiceAdmin("fs", FilesystemServiceAdmin)
     let ns = await fsService.rootNamespace
-    root = await ns.filesystem
+    root = await ns.filesystemForUser(uid, gid)
   elif schema == "ref":
     return instance.restore(uri.parseSturdyRef).castAs(T)
   else:

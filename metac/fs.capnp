@@ -53,9 +53,19 @@ struct MountInfo {
 interface FilesystemNamespace {
   filesystem @0 () -> (fs :Filesystem);
 
+  filesystemForUser @3 (uid :UInt32, gid :UInt32) -> (fs :Filesystem);
+
   mount @1 (info :MountInfo) -> (mount :Mount);
   # Mounts filesystem.
   # TODO: nodevmap mount option
 
   listMounts @2 () -> (mounts :List(Mount));
+}
+
+# implementation details:
+
+struct FsInfo {
+  path @0 :Text;
+  uid @1 :UInt32;
+  gid @2 :UInt32;
 }

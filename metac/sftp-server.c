@@ -1532,10 +1532,15 @@ void set_capabilities(int flags) {
 		fatal ("capset call failed");
 }
 
-void drop_caps() {
-	if (prctl(PR_SET_SECUREBITS, SECBIT_NOROOT) != 0) fatal ("SECBIT_NOROOT failed");
+void drop_caps(int new_uid) {
+	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0) fatal ("SET_NO_NEW_PRIVS failed");
+
+	if (new_uid != -1)
+		if (setuid(new_uid) != 0)
+			fatal("can't setuid");
 
 	if (getuid() != 0) return;
+	if (prctl(PR_SET_SECUREBITS, SECBIT_NOROOT) != 0) fatal ("SECBIT_NOROOT failed");
 
 	// Sometimes CAP_MKNOD might be needed, but without device cgroups it defeats the whole point of dropping caps.
 	set_capabilities((1 << CAP_SETFCAP) | (1 << CAP_FSETID) | (1 << CAP_FOWNER) | (1 << CAP_SETUID) | (1 << CAP_SETGID) | (1 << CAP_DAC_OVERRIDE) | (1 << CAP_DAC_READ_SEARCH));
@@ -1551,7 +1556,7 @@ sftp_server_main(int argc, char **argv, struct passwd* pass)
 	ssize_t len, olen, set_size;
 	SyslogFacility log_facility = SYSLOG_FACILITY_AUTH;
 	char *cp, *homedir = NULL, buf[4*4096];
-	long mask, chroot_fd;
+	long mask, chroot_fd, setuid_id;
 
 	extern char *optarg;
 	extern char *__progname;
@@ -1561,9 +1566,10 @@ sftp_server_main(int argc, char **argv, struct passwd* pass)
 	log_init(__progname, log_level, log_facility, log_stderr);
 
 	chroot_fd = -1;
+	setuid_id = -1;
 
 	while (!skipargs && (ch = getopt(argc, argv,
-	    "d:f:l:P:p:Q:u:C:cehR")) != -1) {
+	    "d:f:l:P:p:Q:u:C:U:cehR")) != -1) {
 		switch (ch) {
 		case 'Q':
 			if (strcasecmp(optarg, "requests") != 0) {
@@ -1588,9 +1594,15 @@ sftp_server_main(int argc, char **argv, struct passwd* pass)
 			break;
 		case 'C':
 			errno = 0;
-			chroot_fd = strtol(optarg, &cp, 8);
+			chroot_fd = strtol(optarg, &cp, 10);
 			if (*cp != '\0' || cp == optarg || (chroot_fd == 0 && errno != 0))
 				fatal("Invalid chroot fd \"%s\"", optarg);
+		case 'U':
+			errno = 0;
+			setuid_id = strtol(optarg, &cp, 10);
+			if (*cp != '\0' || cp == optarg || (chroot_fd == 0 && errno != 0))
+				fatal("Invalid setuid ID \"%s\"", optarg);
+			break;
 		case 'e':
 			log_stderr = 1;
 			break;
@@ -1649,7 +1661,7 @@ sftp_server_main(int argc, char **argv, struct passwd* pass)
 		if (chdir("/") < 0)
             fatal("can't chdir");
 
-		drop_caps();
+		drop_caps(setuid_id);
 	}
 
 	if ((cp = getenv("SSH_CONNECTION")) != NULL) {

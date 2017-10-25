@@ -70,7 +70,7 @@ proc launchProcess(self: AgentEnvImpl, d: ProcessDescription): Future[schemas.Pr
                                      detached = true,
                                      additionalFiles = additionalFiles,
                                      additionalEnv = additionalEnv,
-                                     uid = d.uid.int, gid = d.gid.int)
+                                     uid = d.uid.uint32, gid = d.gid.uint32)
 
   return processImpl.asProcess
 

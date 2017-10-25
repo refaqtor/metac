@@ -13,9 +13,9 @@ proc main*() {.async.} =
     proc(d: CapDescription): Future[AnyPointer] =
       case d.category:
       of "fs:localfile":
-        return localFilePersistable(instance, d.description.castAs(string), runtimeId=d.runtimeId).toAnyPointer.just
+        return localFilePersistable(instance, d.description.castAs(FsInfo), runtimeId=d.runtimeId).toAnyPointer.just
       of "fs:localfs":
-        return localFsPersistable(instance, d.description.castAs(string)).toAnyPointer.just
+        return localFsPersistable(instance, d.description.castAs(FsInfo)).toAnyPointer.just
       of "fs:mount":
         let params = d.description.castAs(FilesystemNamespace_mount_Params)
         return rootNamespace.mount(params.info).toAnyPointerFuture
