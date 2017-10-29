@@ -1597,10 +1597,11 @@ sftp_server_main(int argc, char **argv, struct passwd* pass)
 			chroot_fd = strtol(optarg, &cp, 10);
 			if (*cp != '\0' || cp == optarg || (chroot_fd == 0 && errno != 0))
 				fatal("Invalid chroot fd \"%s\"", optarg);
+			break;
 		case 'U':
 			errno = 0;
 			setuid_id = strtol(optarg, &cp, 10);
-			if (*cp != '\0' || cp == optarg || (chroot_fd == 0 && errno != 0))
+			if (*cp != '\0' || cp == optarg || (setuid_id == 0 && errno != 0))
 				fatal("Invalid setuid ID \"%s\"", optarg);
 			break;
 		case 'e':
